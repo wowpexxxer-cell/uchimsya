@@ -44,7 +44,7 @@
 
   <section class="card">
     <h2><span class="num">2</span> Голос</h2>
-    <p>Выберите голос и нажмите «Пример»: прозвучит «Привет! Давай учиться!». Подберите тёплый и спокойный голос.</p>
+    <p>Выберите голос и нажмите «Пример»: прозвучит «Привет! Давай учиться!». На бесплатном тарифе работают только голоса из первой группы списка. Для детей хорошо подходят спокойные женские голоса, например Sarah, Alice или Matilda.</p>
     <select id="voice" disabled><option>Сначала вставьте ключ</option></select>
     <div class="row"><button id="test" disabled>Пример</button><audio id="player" controls hidden></audio></div>
   </section>
@@ -93,6 +93,7 @@
       body: JSON.stringify({ text, model_id: 'eleven_multilingual_v2', voice_settings: settings })
     });
     if (!res.ok) {
+      if (res.status === 402) { const err = new Error('Этот голос из библиотеки, на бесплатном тарифе он недоступен. Выберите голос из группы «Работают на бесплатном тарифе».'); err.status = 402; throw err; }
       let msg = res.status + '';
       try { const j = await res.json(); msg += ' ' + (j.detail && (j.detail.message || j.detail.status || JSON.stringify(j.detail))); } catch (e) { /* ignore */ }
       const err = new Error(msg); err.status = res.status; throw err;
@@ -106,7 +107,11 @@
       const res = await fetch(`${API}/voices`, { headers: { 'xi-api-key': keyOf() } });
       if (!res.ok) throw new Error(res.status === 401 ? 'Ключ не подошёл. Проверьте, что он скопирован целиком и у него есть доступ Voices: Read.' : 'Ошибка ' + res.status);
       const { voices } = await res.json();
-      $('#voice').innerHTML = voices.map(v => `<option value="${v.voice_id}">${v.name}${v.labels && v.labels.gender ? ' · ' + (v.labels.gender === 'female' ? 'женский' : v.labels.gender === 'male' ? 'мужской' : v.labels.gender) : ''}</option>`).join('');
+      const g = (v) => v.labels && v.labels.gender ? ' · ' + (v.labels.gender === 'female' ? 'женский' : v.labels.gender === 'male' ? 'мужской' : v.labels.gender) : '';
+      const opt = (v) => `<option value="${v.voice_id}">${v.name}${g(v)}</option>`;
+      const free = voices.filter(v => v.category === 'premade'), paid = voices.filter(v => v.category !== 'premade');
+      $('#voice').innerHTML = (free.length ? `<optgroup label="Работают на бесплатном тарифе">${free.map(opt).join('')}</optgroup>` : '')
+        + (paid.length ? `<optgroup label="Из библиотеки: нужен платный тариф">${paid.map(opt).join('')}</optgroup>` : '');
       $('#voice').disabled = false; $('#test').disabled = false; $('#run').disabled = false;
       $('#keymsg').textContent = `Голосов: ${voices.length}`; $('#keymsg').className = 'ok';
     } catch (e) { $('#keymsg').textContent = e.message; $('#keymsg').className = 'err'; }
