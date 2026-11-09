@@ -1,9 +1,9 @@
 // Кэширует приложение, чтобы оно работало без интернета.
 // При изменении файлов поднимайте версию, чтобы планшет скачал обновление.
-const VERSION = 'uchimsya-v1';
+const VERSION = 'uchimsya-v2';
 const SHELL = [
   './', 'index.html', 'styles.css', 'manifest.webmanifest',
-  'js/alphabet.js', 'js/math.js', 'js/app.js',
+  'js/data.js', 'js/voice.js', 'js/app.js', 'audio/index.json',
   'icons/icon.svg', 'icons/icon-192.png', 'icons/icon-512.png'
 ];
 
