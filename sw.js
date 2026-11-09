@@ -1,6 +1,6 @@
 // Кэширует приложение, чтобы оно работало без интернета.
 // При изменении файлов поднимайте версию, чтобы планшет скачал обновление.
-const VERSION = 'uchimsya-v2';
+const VERSION = 'uchimsya-v3';
 const SHELL = [
   './', 'index.html', 'styles.css', 'manifest.webmanifest',
   'js/data.js', 'js/voice.js', 'js/app.js', 'audio/index.json',
@@ -8,7 +8,12 @@ const SHELL = [
 ];
 
 self.addEventListener('install', (e) => {
-  e.waitUntil(caches.open(VERSION).then((c) => c.addAll(SHELL)).then(() => self.skipWaiting()));
+  e.waitUntil(caches.open(VERSION).then(async (c) => {
+    await c.addAll(SHELL);
+    // записанный голос тоже кладём в кэш, чтобы он работал без интернета
+    const keys = await fetch('audio/index.json').then(r => r.json()).catch(() => []);
+    await c.addAll(keys.map(k => 'audio/' + k + '.mp3')).catch(() => {});
+  }).then(() => self.skipWaiting()));
 });
 
 self.addEventListener('activate', (e) => {
