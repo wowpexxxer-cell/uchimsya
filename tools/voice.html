@@ -5,6 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Озвучка для «Учимся играя»</title>
   <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Nunito:wght@700;800;900&display=swap">
+  <meta http-equiv="Cache-Control" content="no-cache">
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
   <style>
     :root { --ink: #22304A; --soft: #5D6C86; --line: #D9E3F0; --blue: #3AA7F0; --green: #3DBE6B; --red: #F2544B; color-scheme: light; }
@@ -38,7 +39,7 @@
   <section class="card">
     <h2><span class="num">1</span> Ключ ElevenLabs</h2>
     <p>На сайте ElevenLabs откройте <a href="https://elevenlabs.io/app/settings/api-keys" target="_blank" rel="noopener">Settings → API Keys</a>, нажмите «Create API Key». В доступах включите <b>Text to Speech</b> и <b>Voices: Read</b>. Скопируйте ключ и вставьте сюда. Никому его не присылайте.</p>
-    <input type="password" id="key" placeholder="sk_..." autocomplete="off">
+    <input type="password" id="key" spellcheck="false" placeholder="sk_..." autocomplete="off">
     <div class="row"><button id="load">Показать мои голоса</button><span id="keymsg"></span></div>
   </section>
 
@@ -69,7 +70,18 @@
   const $ = (s) => document.querySelector(s);
   const log = (t, cls) => { const d = document.createElement('div'); d.textContent = t; if (cls) d.className = cls; $('#log').prepend(d); };
   let rows = [];
-  const keyOf = () => $('#key').value.trim();
+  // Ключ без пробелов и переносов; если вставлен дважды подряд, берём первый.
+  const keyOf = () => {
+    let k = $('#key').value.replace(/\s+/g, '');
+    const parts = k.split('sk_').filter(Boolean);
+    if (k.startsWith('sk_') && parts.length > 1) k = 'sk_' + parts[0];
+    return k;
+  };
+  async function apiError(res) {
+    let detail = '';
+    try { const j = await res.json(); const d = j.detail || j; detail = d.message || d.status || (typeof d === 'string' ? d : JSON.stringify(d)); } catch (e) { /* ignore */ }
+    return `Ошибка ${res.status}${detail ? ': ' + detail : ''}`;
+  }
   const settings = { stability: 0.5, similarity_boost: 0.75, style: 0.1, use_speaker_boost: true, speed: 0.9 };
 
   // список фраз
@@ -94,9 +106,7 @@
     });
     if (!res.ok) {
       if (res.status === 402) { const err = new Error('Этот голос из библиотеки, на бесплатном тарифе он недоступен. Выберите голос из группы «Работают на бесплатном тарифе».'); err.status = 402; throw err; }
-      let msg = res.status + '';
-      try { const j = await res.json(); msg += ' ' + (j.detail && (j.detail.message || j.detail.status || JSON.stringify(j.detail))); } catch (e) { /* ignore */ }
-      const err = new Error(msg); err.status = res.status; throw err;
+      const err = new Error(await apiError(res)); err.status = res.status; throw err;
     }
     return res.blob();
   }
@@ -105,7 +115,12 @@
     $('#keymsg').textContent = 'Загружаю…'; $('#keymsg').className = '';
     try {
       const res = await fetch(`${API}/voices`, { headers: { 'xi-api-key': keyOf() } });
-      if (!res.ok) throw new Error(res.status === 401 ? 'Ключ не подошёл. Проверьте, что он скопирован целиком и у него есть доступ Voices: Read.' : 'Ошибка ' + res.status);
+      if (!res.ok) {
+        const msg = await apiError(res);
+        throw new Error(res.status === 401 || res.status === 400
+          ? msg + '. Похоже, ключ вставлен не так: очистите поле, скопируйте ключ ещё раз и вставьте один раз. Если не поможет, создайте новый ключ с доступами Text to Speech и Voices: Read.'
+          : msg);
+      }
       const { voices } = await res.json();
       const g = (v) => v.labels && v.labels.gender ? ' · ' + (v.labels.gender === 'female' ? 'женский' : v.labels.gender === 'male' ? 'мужской' : v.labels.gender) : '';
       const opt = (v) => `<option value="${v.voice_id}">${v.name}${g(v)}</option>`;
