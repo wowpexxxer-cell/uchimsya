@@ -1,0 +1,13 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
+  <rect width="512" height="512" rx="112" fill="#E6F4EE"/>
+  <g transform="rotate(-8 180 250)">
+    <rect x="70" y="120" width="220" height="220" rx="54" fill="#B83F38"/>
+    <rect x="70" y="106" width="220" height="220" rx="54" fill="#F2544B"/>
+    <text x="180" y="280" text-anchor="middle" font-family="Nunito, Arial Rounded MT Bold, Arial, sans-serif" font-weight="900" font-size="170" fill="#fff">А</text>
+  </g>
+  <g transform="rotate(9 340 300)">
+    <rect x="240" y="208" width="190" height="190" rx="48" fill="#4A47B8"/>
+    <rect x="240" y="196" width="190" height="190" rx="48" fill="#6366F1"/>
+    <text x="335" y="346" text-anchor="middle" font-family="Nunito, Arial Rounded MT Bold, Arial, sans-serif" font-weight="900" font-size="146" fill="#fff">1</text>
+  </g>
+</svg>
